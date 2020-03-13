@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=EDGE">
+    <title>疫情地图</title>
+    <link rel="stylesheet" type="text/css" href="main.css"/>
+    <script src="../jquery.js"></script>
+    <script src="echarts.min.js"></script>
+    <script src="china.js"></script>
+    <style>#china-map {width:800px; height: 600px;margin: auto;}</style>
+</head>
+<body>
+<div id="title">疫情统计平台</div>
+<div id="wrap">
+<div id="main">
+<div id="finder">
+<form>
+    <label for="date">请输入你要查询的日期(仅允许输入2020-01-19到2020-01-29间的一个日期):<input type="text" id="date" /></label>
+    <button type="button" onclick="A()" id="chaxun">查询</button>
+</form>
+</div>
+
+<div id="time"></div>
+<div id="header">
+<table>
+    <tr>
+        <td>现有确证</td>
+        <td>现有疑似</td>
+        <td>现有重症</td>
+    </tr>
+    <tr>
+        <td><span id="dia">200</span></td>
+        <td><span id="dou">20</span></td>
+        <td><span id="ic">492</span></td>
+    </tr>
+    <tr>
+        <td>累计确诊</td>
+        <td>累计治愈</td>
+        <td>累计死亡</td>
+    </tr>
+    <tr>
+        <td><span id="di">3533</span></td>
+        <td><span id="do">482</span></td>
+        <td><span id="i">232</span></td>
+    </tr> 
+</table>
+</div>
+<div id="select">
+<button type="button" onclick="A()" id="a">现有确诊</button>
+<button type="button" onclick="B()" id="b">累计确诊</button>
+</div>
+
+<div id="china-map"></div>
+<script>
+    //存放现有确诊的数据，共35项，第一项为全国
+    var now_diagnose=new Array();
+    for(var i=0;i<35;i++)
+        now_diagnose[i]=0;
+    //存放现有疑似
+    var now_doubt=new Array();
+    for(var i=0;i<35;i++)
+        now_doubt[i]=0;
+    //存放现有重症
+    var now_ICU=new Array();
+    for(var i=0;i<35;i++)
+        now_ICU[i]=0;
+    //累计确诊
+    var total_diagnose=new Array();
+    for(var i=0;i<35;i++)
+        total_diagnose[i]=0;
+    //累计治愈
+    var total_cure=new Array();
+    for(var i=0;i<35;i++)
+        total_cure[i]=0;
+    //累计死亡
+    var total_death=new Array();
+    for(var i=0;i<35;i++)
+        total_death[i]=0;
+        
+    var myChart = echarts.init(document.getElementById('china-map'));
+    //用到ajax框架
+    function PageLoad(str,title)
+    {
+        var xmlhttp=null;
+        //若框没有输入
+        if(str=="")
+        {
+            var map=document.getElementById('china-map');
+            map.innerHTML="";
+            return;
+        }
+        if (window.XMLHttpRequest)
+        {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp=new XMLHttpRequest();
+        }
+        else
+        {// code for IE6, IE5
+            xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+        }
+     
+        xmlhttp.open("GET",str+".log.txt",true);
+        xmlhttp.send();   
+        //接收到服务器端相应后的工作
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && ( xmlhttp.status==200 || xmlhttp.status==0))
+            {
+                var total=xmlhttp.responseText;
+                //记录每个省份的疫情情况的数组，每个元素为一个字符串
+                var province=total.split("\n");
+                for(var i=0;i<35;i++)
+                {
+                    //将每个省份的字符串分割
+                    var temp=province[i].split(" ");
+                    now_diagnose[i]=temp[2];
+                    now_doubt[i]=temp[4];
+                    now_ICU[i]=temp[6];
+                    total_diagnose[i]=temp[8];
+                    total_cure[i]=temp[10];
+                    total_death[i]=temp[12];
+                }
+                if(title=="现有确诊")
+                    myChart.setOption(setoption(now_diagnose));
+                else
+                    myChart.setOption(setoption(total_diagnose));
+                var nation=province[0].split(" ");
+                document.getElementById("dia").innerHTML=nation[2];
+                document.getElementById("dou").innerHTML=nation[4];
+                document.getElementById("ic").innerHTML=nation[6];
+                document.getElementById("di").innerHTML=nation[8];
+                document.getElementById("do").innerHTML=nation[10];
+                document.getElementById("i").innerHTML=nation[12];
+                document.getElementById("time").innerHTML="更新至"+document.getElementById("date").value;
+            }
+        };
+        
+    }
+
+    function A()
+    {
+        //按钮形态是否要改变
+        var change=true;
+        var f=true;
+        var day;
+        var day1;
+        var day2;
+        //检查传进来的日期格式
+        //日期格式的正则表达式
+        var reg = /\d{4}-\d{1,2}-\d{1,2}/;//\d代表一个数字，等价于[0-9],\D匹配一个非数字字符，等价于[^0-9]
+        if(!reg.test(date.value))
+            f=false;
+        else
+        {
+            day=new Date(date.value.split("-")[0],date.value.split("-")[1],date.value.split("-")[2]);
+            day1=new Date(2020,01,19);
+            day2=new Date(2020,01,29);
+            if(day<day1 || day>day2)
+                f=false;
+        }
+
+        
+        if(date.value=="")
+        {
+            alert("请输入你要查询的日期！");
+            change=false;
+        }
+        else if(!f)
+        {
+            alert("请输入正确的的日期！");
+            change=false;
+        }
+        else
+            PageLoad(date.value,"现有确诊");
+        //设置按钮被选中状态
+        if(change==true)
+        {
+            document.getElementById("a").style.color = "yellow";
+            document.getElementById("b").style.color = "white";
+        }
+    }
+    function B()
+    {
+        //按钮形态是否要改变
+        var change=true;
+        var f=true;
+        var day;
+        var day1;
+        var day2;
+        //检查传进来的日期格式
+        //日期格式的正则表达式
+        var reg = /\d{4}-\d{1,2}-\d{1,2}/;//\d代表一个数字，等价于[0-9],\D匹配一个非数字字符，等价于[^0-9]
+        if(!reg.test(date.value))
+            f=false;
+        else
+        {
+            day=new Date(date.value.split("-")[0],date.value.split("-")[1],date.value.split("-")[2]);
+            day1=new Date(2020,01,19);
+            day2=new Date(2020,01,29);
+            if(day<day1 || day>day2)
+                f=false;
+        }
+
+        
+        if(date.value=="")
+        {
+            alert("请输入你要查询的日期！");
+            change=false;
+        }
+        else if(!f)
+        {
+            alert("请输入正确的的日期！");
+            change=false;
+        }
+        else
+            PageLoad(date.value,"累计确诊");
+        //设置按钮被选中状态
+        if(change==true)
+        {
+            document.getElementById("b").style.color = "yellow";
+            document.getElementById("a").style.color = "white";
+        }
+    }
+
+    function setoption(str)
+    {
+        var option = {
+            
+            tooltip : {//提示框组件。
+                trigger: 'item'//数据项图形触发，主要在散点图，饼图等无类目轴的图表中使用。
+            },
+
+            visualMap: {//颜色的设置  dataRange
+                show:true,
+                x: 'left',
+                y: 'center',
+                splitList: [
+                    {start: 1500,color:'#000000'},
+                    {start: 800, end: 1499,color:'#DB2828'},
+                    {start: 600, end: 799,color:'#E85C72'},
+                    {start: 400, end: 599,color:'#EE8D8D'},
+                    {start: 200, end: 399,color:'#E3AEAE'},
+                    {start: 100, end: 199,color:'#E1CACA'},
+                    {start: 0, end: 99,color: '#D5CFCF'},
+            
+                ],
+    //            min: 0,
+    //            max: 2500,
+    //            calculable : true,//颜色呈条状
+            },
+            roamController: {//控制地图的上下左右放大缩小 图上没有显示
+                show: true,
+                x: 'right',
+                mapTypeControl: {
+                    'china': true
+                }
+            },
+            series : [
+                {
+                    name: '确诊',
+                    type: 'map',
+                    mapType: 'china',
+                    roam: false,//是否开启鼠标缩放和平移漫游
+                    itemStyle:{//地图区域的多边形 图形样式
+                        normal:{//是图形在默认状态下的样式
+                            label:{
+                                show:true,//是否显示标签
+                                textStyle: {
+                                    color: "#000306"
+                                }
+                            }
+                        },
+                        emphasis:{//是图形在高亮状态下的样式,比如在鼠标悬浮或者图例联动高亮时
+                            label:{show:true}
+                        }
+                    },
+                    top:"3%",//组件距离容器的距离
+                    data:[
+                        {name: '北京',value: str[1]},
+                        {name: '天津',value: str[2]},
+                        {name: '上海',value: str[3]},
+                        {name: '重庆',value: str[4]},
+                        {name: '河北',value: str[5]},
+                        {name: '河南',value: str[6]},
+                        {name: '云南',value: str[7]},
+                        {name: '辽宁',value: str[8]},
+                        {name: '黑龙江',value: str[9]},
+                        {name: '湖南',value: str[10]},
+                        {name: '安徽',value: str[11]},
+                        {name: '山东',value: str[12]},
+                        {name: '新疆',value: str[13]},
+                        {name: '江苏',value: str[14]},
+                        {name: '浙江',value: str[15]},
+                        {name: '江西',value: str[16]},
+                        {name: '湖北',value: str[17],selected : true},//默认选中
+                        {name: '广西',value: str[18]},
+                        {name: '甘肃',value: str[19]},
+                        {name: '山西',value: str[20]},
+                        {name: '内蒙古',value: str[21]},
+                        {name: '陕西',value: str[22]},
+                        {name: '吉林',value: str[23]},
+                        {name: '福建',value: str[24]},
+                        {name: '贵州',value: str[25]},
+                        {name: '广东',value: str[26]},
+                        {name: '青海',value: str[27]},
+                        {name: '西藏',value: str[28]},
+                        {name: '四川',value: str[29]},
+                        {name: '宁夏',value: str[30]},
+                        {name: '海南',value: str[31]},
+                        {name: '台湾',value: str[32]},
+                        {name: '香港',value: str[33]},
+                        {name: '澳门',value: str[34]}
+                    ]
+                }
+            ]
+        };
+        return option;
+    }
+    //将初始页面设置在最后一天
+    var xmlhttp=null;
+        if (window.XMLHttpRequest)
+        {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp=new XMLHttpRequest();
+        }
+        else
+        {// code for IE6, IE5
+            xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+        }
+     
+         
+        //接收到服务器端相应后的工作
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && ( xmlhttp.status==200 || xmlhttp.status==0))
+            {
+                var total=xmlhttp.responseText;
+                //记录每个省份的疫情情况的数组，每个元素为一个字符串
+                var province=total.split("\n");
+                for(var i=0;i<35;i++)
+                {
+                    //将每个省份的字符串分割
+                    var temp=province[i].split(" ");
+                    now_diagnose[i]=temp[2];
+                    now_doubt[i]=temp[4];
+                    now_ICU[i]=temp[6];
+                    total_diagnose[i]=temp[8];
+                    total_cure[i]=temp[10];
+                    total_death[i]=temp[12];
+                }
+                var nation=province[0].split(" ");
+                document.getElementById("dia").innerHTML=nation[2];
+                document.getElementById("dou").innerHTML=nation[4];
+                document.getElementById("ic").innerHTML=nation[6];
+                document.getElementById("di").innerHTML=nation[8];
+                document.getElementById("do").innerHTML=nation[10];
+                document.getElementById("i").innerHTML=nation[12];
+                document.getElementById("time").innerHTML="更新至2020-01-29";
+            }
+        };
+        xmlhttp.open("GET","2020-01-29.log.txt",false);
+        xmlhttp.send(); 
+        myChart.setOption(setoption(now_diagnose));
+        document.getElementById("a").style.color = "yellow";
+        myChart.on('click',function(params){ //判断点击的省份，做不同的响应操作
+            console.log(params);
+            var date=document.getElementById("date").value;
+            if(date=="")
+                date="2020-01-29";
+            var url="line.html?index="+params.name+"&"+date;
+            window.location.href=url;
+        }),
+    myChart.on('mouseover', function (params) {
+        var dataIndex = params.dataIndex;
+        console.log(params);
+    });
+</script>
+</div>
+</div>
+</body>
+</html>
