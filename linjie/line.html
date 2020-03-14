@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>疫情趋势图</title>
+    <link rel="stylesheet" type="text/css" href="main.css"/>
+    <script src="echarts.min.js"></script>
+</head>
+<body>
+<div id="title">疫情统计平台</div>
+<div id="wrap">
+<div id="main">
+<h2 ><span id="province"></span> <span id="leixing"></span></h2>
+
+<div id="return">
+    <button type="button" onclick="changepage()" id="chaxun">返回主界面</button>
+</div>
+
+<div id="time"></div>
+<div id="header">
+<table>
+    <tr>
+        <td>现有确诊</td>
+        <td>累计确诊</td>
+        <td>累计治愈</td>
+        <td>累计死亡</td>
+    </tr>
+    <tr>
+        <td><span id="dia"></span></td>
+        <td><span id="total_dia"></span></td>
+        <td><span id="total_cu"></span></td>
+        <td><span id="total_dea"></span></td>
+    </td>
+</table>
+</div>
+<!--为echarts准备一个容器，画图就画在里面-->
+<div id="box" style="width:800px; height: 500px;margin: auto;"></div>
+<div id="select2">
+<button type="button" onclick="diagnose_trend()" id="a">新增确诊趋势</button>
+<button type="button" onclick="doubt_trend()" id="b">新增疑似趋势</button>
+<button type="button" onclick="cure_trend()" id="c">治愈趋势</button>
+<button type="button" onclick="death_trend()" id="d">死亡趋势</button>
+</div>
+<br/>
+
+
+<script>
+    //用于存放新增确诊趋势
+    var new_diagnose=new Array();
+    for(var i=0;i<15;i++)
+        new_diagnose[i]=0;
+    //用于存放新增疑似趋势
+    var new_doubt=new Array();
+    for(var i=0;i<15;i++)
+        new_doubt[i]=0;
+    //用于存放治愈趋势
+    var cure=new Array();
+    for(var i=0;i<15;i++)
+        cure[i]=0;
+    //用于存放死亡趋势
+    var death=new Array();
+    for(var i=0;i<15;i++)
+        death[i]=0;
+    function changepage()
+    {
+        window.location.href='新建文本文档.html';
+    }
+    //新增确诊趋势
+    function diagnose_trend()
+    {
+        myChart.setOption(setoption(new_diagnose));
+        document.getElementById("leixing").innerHTML="新增确诊趋势";
+        document.getElementById("a").style.color = "yellow";
+        document.getElementById("b").style.color = "white";
+        document.getElementById("c").style.color = "white";
+        document.getElementById("d").style.color = "white";
+    }
+    //新增疑似趋势
+    function doubt_trend()
+    {
+        myChart.setOption(setoption(new_doubt));
+        document.getElementById("leixing").innerHTML="新增疑似趋势";
+        document.getElementById("a").style.color = "white";
+        document.getElementById("b").style.color = "yellow";
+        document.getElementById("c").style.color = "white";
+        document.getElementById("d").style.color = "white";
+    }
+    //治愈趋势
+    function cure_trend()
+    {
+        myChart.setOption(setoption(cure));
+        document.getElementById("leixing").innerHTML="治愈趋势";
+        document.getElementById("a").style.color = "white";
+        document.getElementById("b").style.color = "white";
+        document.getElementById("c").style.color = "yellow";
+        document.getElementById("d").style.color = "white";
+    }
+    //死亡趋势
+    function death_trend()
+    {
+        myChart.setOption(setoption(death));
+        document.getElementById("leixing").innerHTML="死亡趋势";
+        document.getElementById("a").style.color = "white";
+        document.getElementById("b").style.color = "white";
+        document.getElementById("c").style.color = "white";
+        document.getElementById("d").style.color = "yellow";
+    }
+   
+    //接收省份名字和日期
+    var temp=window.location.href.split("=")[1];
+    var pro_name=temp.split("&")[0];
+    var date=temp.split("&")[1];
+
+    document.getElementById("province").innerHTML=pro_name;
+    document.getElementById("leixing").innerHTML="新增确诊趋势";
+    document.getElementById("time").innerHTML="更新至"+date;
+
+    //初始化ehcharts实例
+    var myChart=echarts.init(document.getElementById("box"));
+
+    function setdata(i,data)
+    {
+        new_diagnose[i]=data;
+    }
+   
+     //用ajax读取服务器端的文件，获取date日期前的name省新增确诊信息
+     function getdata(date,name)
+    {
+       
+        var in_date=new Date(2020,01,19);//输入的日期
+        //计算循环次数
+        var p=0;
+        //循环读取文件
+        while(1)
+        {
+            var xmlhttp=null;
+            if (window.XMLHttpRequest)
+            {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp=new XMLHttpRequest();
+            }
+            else
+            {// code for IE6, IE5
+                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            //把日期对象再组装成字符串
+            var temp=in_date.getFullYear().toString()+"-0"+in_date.getMonth().toString()+"-"+in_date.getDate().toString();
+            //接收到服务器端相应后的工作
+            xmlhttp.onreadystatechange=function()
+            {
+                if (xmlhttp.readyState==4 && ( xmlhttp.status==200 || xmlhttp.status==0))
+                {
+                    var total=xmlhttp.responseText;
+                    //记录每个省份的疫情情况的数组，每个元素为一个字符串
+                    var province=total.split("\n");
+                    //循环遍历35个省份查询对应省份数据
+                    for(var i=0;i<35;i++)
+                    {
+                        //将每个省份的字符串分割
+                        var temp1=province[i].split(" ");
+                        if(temp1[0]==name && temp==date)
+                        {
+                            //设置顶栏数据
+                            document.getElementById("dia").innerHTML=temp1[2];
+                            document.getElementById("total_dia").innerHTML=temp1[8];                      
+                            document.getElementById("total_cu").innerHTML=temp1[10];
+                            document.getElementById("total_dea").innerHTML=temp1[12];
+                        }
+                        if(temp1[0]==name)
+                        {
+                            //设置折线图数据
+                            new_diagnose[p]=parseInt(temp1[2]);
+                            new_doubt[p]=parseInt(temp1[4]);
+                            cure[p]=parseInt(temp1[10]);
+                            death[p]=parseInt(temp1[12]);
+                            break;
+                        }
+                        
+                    }
+                    
+                }
+            };
+            //这个一定要放onredy...的后面!!
+            //因为onready..里面要设置全局变量new_diagnose...所以必须为false(同步)
+            xmlhttp.open("GET",temp+".log.txt",false);
+            xmlhttp.send();   
+            //若文件都读完了则退出循环
+            if(temp==date)
+                break;
+            //天数加1
+            in_date.setDate(in_date.getDate()+1);
+            p++;
+           
+        }
+        //设置折线图
+        myChart.setOption(setoption(new_diagnose));
+    }
+    function setoption(str)
+    {
+    //指定图表的配置项和数据
+    var option={
+        //标题
+        title:{
+          text:''
+        },
+        //工具箱
+        //保存图片
+        toolbox:{
+            show:true,
+            feature:{
+                saveAsImage:{
+                    show:true
+                }
+            }
+        },
+        //图例-每一条数据的名字叫新增病例
+        legend:{
+            data:['新增病例']
+        },
+        //x轴
+        xAxis:{
+            data:["01.19","01.20","01.21","01.22","01.23","01.24","01.25","01.26","01.27","01.28","01.29"]
+        },
+        //y轴没有显式设置，根据值自动生成y轴
+        yAxis:{},
+        tooltip:{
+            trigger: 'axis'
+        },
+        //数据-data是最终要显示的数据
+        series:[{
+            name:'新增病例',
+            type:'line',
+            data:[str[0],str[1],str[2],str[3],str[4],str[5],str[6],str[7],str[8],str[9],str[10]],
+            trigger: 'item'
+        }]
+    };
+    return option;
+    }
+    //使用刚刚指定的配置项和数据项显示图表
+    getdata(date,pro_name);
+    document.getElementById("a").style.color = "yellow";
+    document.getElementById("b").style.color = "white";
+    document.getElementById("c").style.color = "white";
+    document.getElementById("d").style.color = "white";
+</script>
+</div>
+</div>
+</body>
+
+</html>
